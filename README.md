@@ -7,6 +7,7 @@ Sample data only — there is no backend.
 ## Run it
 
 ```bash
+cd onground-app
 npm install
 npm run dev        # http://localhost:5173
 npm test           # 35 unit + component tests (vitest)
