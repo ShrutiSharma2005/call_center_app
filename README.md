@@ -80,11 +80,17 @@ Design notes:
 All the sample data lives in src/data/ as small JavaScript modules:
 
 -user.js: the signed-in user and top bar stats
+
 -dashboard.js: KPIs, progress, earnings, tasks, who’s waiting and the 7-day chart numbers
+
 -calls.js: planned calls, missed calls and recent calls
+
 -leads.js: the 5 leads for the Leads modal
+
 -calendar.js: calendar events
+
 -pulse.js: channels, agents, chat messages and the “Needs your input” card
+
 -practise.js: the Practise a call scenarios
 
 ## Accessibility
