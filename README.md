@@ -1,110 +1,87 @@
-# On-Ground.ai — Call Centre App (React)
+# On-Ground.ai — Call Centre App (assignment)
 
-React version of `OnGround_CallCentre_App_Mock.html` (Retail · Web · Advisor App v9).
-The UI is identical to the original HTML: same markup, same CSS, same behaviour.
+A rebuild of the Call Centre agent app: app shell, dashboard, planner (calls to make, incoming, recent),
+calendar, and Pulse (home + channel chat), plus the Leads modal with paging.
+Sample data only — there is no backend.
+
+## Run it
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm test           # 35 unit + component tests (vitest)
+npm run build      # production build in dist/
+```
+
+Needs Node 18+. Open it in the latest Chrome on a laptop; it also works at phone width.
+
+## Stack and why
+
+| Choice | Why |
+|---|---|
+| **React 19 + Vite** | React is preferred; Vite gives a fast dev loop and a tiny config. |
+| **react-router (HashRouter)** | Real URLs per screen (`#/plan/incoming`, `#/pulse/callcentre-team`) and the build works on any static host with no rewrite rules. |
+| **recharts** | Small declarative bar charts for the 7-day views. Loaded lazily so the first paint stays fast. |
+| **lucide-react** | Consistent icon set. |
+| **Plain CSS** (one file, tokens at the top) | Keeps type sizes restrained and easy to tune in one place; no styling framework needed for an app this size. |
+| **vitest + Testing Library** | Tests the behaviour a user sees (paging, chat, call flow), not implementation details. |
+
+## What is done
+
+**Must build**
+- App shell: sidebar (Plan expands to its sub-pages) and top bar
+- Dashboard: greeting + KPI cards, on/off queue toggle, progress, who's waiting, earnings slab bar, tasks, 7-day charts
+- Plan → **Calls to make**: ranked by score, expandable rows, paging (5 per page)
+- Plan → **Incoming**: missed calls ranked by expected value, total at stake
+- Plan → **Recent**: calls by type/time/length; tap a call to review its summary and script adherence
+- **Calendar**: month grid with event dots, Today button, month switcher, agenda for the selected day
+- **Pulse** home (AvaniBot card, role/task agents, general, channels, search) and a **channel chat**
+- **Leads modal** with paging (buttons, dots, ← → keys), ICP and intent scores, collapsible breakdown / journey / buying signals
+
+**Bonus**
+- Send a message in a channel (Enter or button, emoji picker, auto-scroll)
+- Answer the pinned "Needs your input" card (buttons or typed reply); the answer is posted to the chat
+- **Call back** and **call now**: a simulated call screen with a timer; ending the call marks the row done, adds it to Recent and updates the dashboard "Leads called" count
+- **Practise a call**: pick a scenario, read the tip, record (timer), get feedback
+- Works at phone width (sidebar becomes a bottom bar, grids stack)
+- Charts with a library (recharts)
+
+**Skipped on purpose**
+- The DEMO strip and floating dial button (optional demo tools)
+- Real audio recording / scoring in Practise (the score is a simple demo rule, see `scoreFor`)
+- Real AI for AvaniBot (a few canned answers keep the demo offline)
+- Persistence: state lives in memory and resets on refresh
 
 ## Project structure
 
 ```
-onground-app/
-├── public/
-│   └── legacy/
-│       ├── onground-main.js     # original app logic (unchanged)
-│       └── onground-staff.js    # original "staff" logic (unchanged)
-└── src/
-    ├── App.jsx                  # all markup converted to JSX + script loader
-    ├── App.css                  # original CSS (unchanged) + Inter font import
-    ├── tabler-icons.css         # self-hosted Tabler Icons 3.46.0 font (unchanged)
-    └── main.jsx                 # Vite entry point
+src/
+├── App.jsx                  routes
+├── main.jsx                 entry (HashRouter + state provider)
+├── data/                    sample data modules (user, dashboard, calls, leads, calendar, pulse, practise)
+├── state/AppState.jsx       one reducer for call outcomes, chat and the needs-input card
+├── utils/                   pure helpers (format, paginate, calendar grid) — all unit tested
+├── components/
+│   ├── layout/              AppShell, Sidebar, TopBar, CallModal
+│   └── ui/                  Avatar, Modal, Collapsible, Pager, ScoreBar
+├── features/
+│   ├── dashboard/  plan/  calendar/  pulse/  leads/  practise/
+├── styles/global.css        tokens, layout, components, responsive rules
+└── test/render.jsx          test helper (router + state)
 ```
 
-## Requirements
+Design notes:
+- The reducer is pure; ids and timestamps are created in the action helpers (`makeActions`), which keeps it easy to test.
+- Screens read data through selectors (`selectPlanned`, `selectMissed`), so ranking logic lives in one place.
+- `Modal` handles Esc, backdrop click and focus return once, and is reused by Leads, call review and AvaniBot.
+- Calendar events are defined relative to today so the demo always shows dots in view.
 
-- Node.js 18 or newer
-- npm
-- Internet connection (Chart.js and the Inter font load from CDNs)
+## Accessibility
+Buttons and links are real elements, expandable rows and collapsibles use `aria-expanded`, modals use `role="dialog"`,
+the calendar is a labelled grid, and progress bars expose `role="progressbar"`.
 
-## Setup
-
-```bash
-# 1. Create a Vite + React project
-npm create vite@latest onground-app -- --template react
-cd onground-app
-npm install
-```
-
-2. Copy the converted files into the project:
-   - `src/App.jsx`, `src/App.css`, `src/tabler-icons.css` → replace/add in `src/`
-   - `public/legacy/` folder → copy into `public/`
-
-3. Open `src/main.jsx` and **remove** the line:
-
-   ```js
-   import './index.css'
-   ```
-
-   Vite's default `index.css` centers the body and will break the layout.
-   `main.jsx` should look like this:
-
-   ```jsx
-   import { StrictMode } from 'react'
-   import { createRoot } from 'react-dom/client'
-   import App from './App.jsx'
-
-   createRoot(document.getElementById('root')).render(
-     <StrictMode>
-       <App />
-     </StrictMode>,
-   )
-   ```
-
-## Run
-
-```bash
-cd onground-app
-npm run dev
-```
-
-Open the URL printed in the terminal (usually http://localhost:5173).
-
-## Build for production
-
-```bash
-npm run build
-npm run preview
-```
-
-## How it works
-
-- `App.jsx` renders the full original markup as JSX. Inline styles are style
-  objects; inline handlers (`onclick="openX(this)"`) are React handlers wrapped
-  by a small `on()` helper so `this` still points to the clicked element.
-- After the markup is mounted, `App.jsx` loads, in order:
-  1. Chart.js 4.4.0 (cdnjs)
-  2. `/legacy/onground-main.js`
-  3. `/legacy/onground-staff.js`
-
-  It then fires `DOMContentLoaded` once, because the original scripts register
-  startup code on that event.
-- The original logic updates the page directly through the DOM (by element ID),
-  so the component is intentionally static and does not re-render.
-- A guard prevents the scripts from loading twice under React StrictMode.
-
-## Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| `ENOENT ... package.json` | You are in the wrong folder. Run `cd onground-app` first. |
-| Layout looks shifted or centered | Remove `import './index.css'` from `src/main.jsx`. |
-| Icons missing | Check `src/tabler-icons.css` exists and is imported at the top of `App.jsx`. |
-| Buttons do nothing | Open the browser console (F12). A 404 on `/legacy/onground-main.js` means `public/legacy/` is in the wrong place. |
-| Charts missing | Chart.js loads from a CDN; check your internet connection. |
-| `EBUSY` file watcher errors (Windows) | Usually harmless (sync or antivirus locking files). If they persist, move the project out of Desktop/OneDrive, e.g. `C:\dev\onground-app`. |
+## AI tools used
+- **Claude (Anthropic)** — helped plan the structure, write the components, data and tests. I reviewed and can explain the code.
 
 ## Notes
-
-- The scripts load from `/legacy/...`, so serve the app from the site root.
-- To bundle Chart.js instead of using the CDN: `npm i chart.js`, then set
-  `window.Chart` before loading the legacy scripts.
-- Possible next step: convert screens one by one into real React components
-  with state, replacing the matching DOM-based code in `public/legacy/`.
+- Built from the assignment PDF (screens, behaviours, review criteria). All code, copy and sample data here are written for this project; the mock page's source was not copied.
