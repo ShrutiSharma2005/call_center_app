@@ -76,6 +76,16 @@ Design notes:
 - Screens read data through selectors (`selectPlanned`, `selectMissed`), so ranking logic lives in one place.
 - `Modal` handles Esc, backdrop click and focus return once, and is reused by Leads, call review and AvaniBot.
 - Calendar events are defined relative to today so the demo always shows dots in view.
+## Data
+All the sample data lives in src/data/ as small JavaScript modules:
+
+-user.js: the signed-in user and top bar stats
+-dashboard.js: KPIs, progress, earnings, tasks, who’s waiting and the 7-day chart numbers
+-calls.js: planned calls, missed calls and recent calls
+-leads.js: the 5 leads for the Leads modal
+-calendar.js: calendar events
+-pulse.js: channels, agents, chat messages and the “Needs your input” card
+-practise.js: the Practise a call scenarios
 
 ## Accessibility
 Buttons and links are real elements, expandable rows and collapsibles use `aria-expanded`, modals use `role="dialog"`,
